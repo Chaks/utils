@@ -5,10 +5,12 @@
 package org.javaveda.pmd.utils;
 
 import com.google.common.base.Functions;
+import com.google.common.base.Splitter;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import java.io.FileReader;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Unmarshaller;
@@ -22,6 +24,8 @@ public class Metrics {
   private static Map<String, Integer> priorityMap = new HashMap<String, Integer>();
   private static Map<String, Integer> ruleMap = new HashMap<String, Integer>();
   private static Map<String, Integer> rulesetMap = new HashMap<String, Integer>();
+  private static Map<String, Integer> cyclomaticComplexityMap = new HashMap<String, Integer>();
+  private static Map<String, Integer> nPathComplexityMap = new HashMap<String, Integer>();
 
   /**
    * @param args the command line arguments
@@ -30,13 +34,38 @@ public class Metrics {
     JAXBContext context = JAXBContext.newInstance(PMD.class);
     Unmarshaller unmarshaller = context.createUnmarshaller();
     PMD pmd = (PMD) unmarshaller.unmarshal(new FileReader(args[0]));
-    System.out.println(pmd);
+    //System.out.println(pmd);
     for (SourceFile sourceFile : pmd.getSourceFiles()) {
-      System.out.println("" + sourceFile.getName());
+      //System.out.println("" + sourceFile.getName());
       for (Violation violation : sourceFile.getViolations()) {
         handleCount(priorityMap, violation.getPriority());
         handleCount(ruleMap, violation.getRule());
         handleCount(rulesetMap, violation.getRuleset());
+
+        //Handle CyclomaticComplexity and NPathComplexity
+        if ("CyclomaticComplexity".equals(violation.getRule())
+                || "NPathComplexity".equals(violation.getRule())) {
+          String noFullstopdDescription = violation.getDescription().replaceAll("\\.", "");
+          Iterable<String> iterable = Splitter.on(" ").split(noFullstopdDescription);
+          Iterator<String> iterator = iterable.iterator();
+          String methodName = "";
+          String complexity = "0";
+          int counter = 0;
+          while (iterator != null && iterator.hasNext()) {
+            counter++;
+            String nextElement = iterator.next();
+            if (counter == 3) {
+              methodName = nextElement.replaceAll("'", "");
+            } else {
+              complexity = nextElement;
+            }
+          }
+          if ("CyclomaticComplexity".equals(violation.getRule())) {
+            cyclomaticComplexityMap.put(violation.getClassName() + ": " + methodName, Integer.valueOf(complexity));
+          } else if ("NPathComplexity".equals(violation.getRule())) {
+            nPathComplexityMap.put(violation.getClassName() + ": " + methodName, Integer.valueOf(complexity));
+          }
+        }
       }
     }
     //System.out.println("priorityMap=> " + priorityMap);
@@ -51,6 +80,12 @@ public class Metrics {
     Map<String, Integer> sortedRulesetMap = Maps.newTreeMap(Ordering.natural().reverse().onResultOf(Functions.forMap(rulesetMap)).compound(Ordering.natural()));
     sortedRulesetMap.putAll(rulesetMap);
     System.out.println("sortedRulesetMap=> " + sortedRulesetMap);
+    Map<String, Integer> sortedCyclomaticComplexityMap = Maps.newTreeMap(Ordering.natural().reverse().onResultOf(Functions.forMap(cyclomaticComplexityMap)).compound(Ordering.natural()));
+    sortedCyclomaticComplexityMap.putAll(cyclomaticComplexityMap);
+    System.out.println("sortedCyclomaticComplexityMap=> " + sortedCyclomaticComplexityMap);
+    Map<String, Integer> sortedNpathComplexityMap = Maps.newTreeMap(Ordering.natural().reverse().onResultOf(Functions.forMap(nPathComplexityMap)).compound(Ordering.natural()));
+    sortedNpathComplexityMap.putAll(nPathComplexityMap);
+    System.out.println("sortedNpathComplexityMap=> " + sortedNpathComplexityMap);
   }
 
   private static void handleCount(Map<String, Integer> map, String key) {

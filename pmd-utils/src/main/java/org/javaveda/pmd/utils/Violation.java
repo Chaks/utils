@@ -6,6 +6,7 @@ package org.javaveda.pmd.utils;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlValue;
 import javax.xml.bind.annotation.adapters.CollapsedStringAdapter;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
@@ -16,9 +17,21 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 @XmlRootElement(name = "violation")
 public class Violation {
 
+  private String className;
   private String rule;
   private String ruleset;
   private String priority;
+  private String description;
+
+  @XmlJavaTypeAdapter(CollapsedStringAdapter.class)
+  @XmlAttribute(name = "class")
+  public String getClassName() {
+    return className;
+  }
+
+  public void setClassName(String className) {
+    this.className = className;
+  }
 
   @XmlJavaTypeAdapter(CollapsedStringAdapter.class)
   @XmlAttribute(name = "rule")
@@ -50,8 +63,19 @@ public class Violation {
     this.priority = priority;
   }
 
+  @XmlJavaTypeAdapter(CollapsedStringAdapter.class)
+  @XmlValue
+  public String getDescription() {
+    return description;
+  }
+
+  public void setDescription(String description) {
+    this.description = description;
+  }
+
   @Override
   public String toString() {
-    return "Violation{" + "rule=" + rule + ", ruleset=" + ruleset + ", priority=" + priority + '}';
+    return "Violation{" + "className=" + className + ", rule=" + rule + ", "
+            + "ruleset=" + ruleset + ", priority=" + priority + ", description=" + description + '}';
   }
 }
